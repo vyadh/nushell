@@ -24,21 +24,12 @@ def create_execution_plan [test: string] -> string {
 def run_tests [tests: list<record<name: string, execute: closure>>] {
     let results = $tests | par-each { run_test $in }
 
-    print_header
     print_results $results
     print_summary $results
 
     if ($results | any { |test| $test.result == "FAIL" }) {
         exit 1
     }
-}
-
-def print_header [] {
-     if ("GITHUB_ACTIONS" in $env) {
-         print "## Container Test Results"
-     } else {
-         print "Running tests..."
-     }
 }
 
 def print_results [results: list<record<name: string, result: string>>] {
