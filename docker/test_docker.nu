@@ -2,7 +2,7 @@
 use std assert
 
 # Usage:
-# docker run -it --rm -v $"(pwd):/work" nu-alpine /work/docker-tests.nu
+# docker run -it --rm -v $"(pwd):/work" nushell:alpine /work/test_docker.nu
 
 def main [] {
     let test_plan = (
