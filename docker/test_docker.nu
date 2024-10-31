@@ -2,7 +2,7 @@
 use std assert
 
 # Usage:
-# docker run -it --rm -v $"(pwd):/work" nushell:alpine /work/test_docker.nu
+#   docker run -it --rm -v $"(pwd):/work" nushell:alpine /work/test_docker.nu
 
 def main [] {
     let test_plan = (
@@ -24,12 +24,21 @@ def create_execution_plan [test: string] -> string {
 def run_tests [tests: list<record<name: string, execute: closure>>] {
     let results = $tests | par-each { run_test $in }
 
+    print_header
     print_results $results
     print_summary $results
 
     if ($results | any { |test| $test.result == "FAIL" }) {
         exit 1
     }
+}
+
+def print_header [] {
+     if ("GITHUB_ACTIONS" in $env) {
+         print "### Container Test Results"
+     } else {
+         print "Running tests..."
+     }
 }
 
 def print_results [results: list<record<name: string, result: string>>] {
@@ -39,7 +48,12 @@ def print_results [results: list<record<name: string, result: string>>] {
         let color = if $pass { "green" } else { "red" }
         $"(ansi $color)($emoji) ($row.result)(ansi reset)"
     }
-    print $display_table
+
+    if ("GITHUB_ACTIONS" in $env) {
+        print ($display_table | to md --pretty)
+    } else {
+        print $display_table
+    }
 }
 
 def print_summary [results: list<record<name: string, result: string>>] -> bool {
