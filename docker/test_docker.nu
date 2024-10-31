@@ -115,7 +115,7 @@ def "test temp directory is cleared" [] {
     assert equal $temp []
 }
 
-def "test cache is cleared on Debian-like containers" [] {
+def "test apt install cache is cleared on Debian-like containers" [] {
     let distro = cat /etc/os-release
         | lines
         | parse "{key}={value}"
