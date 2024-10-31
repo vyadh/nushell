@@ -2,7 +2,7 @@
 use std assert
 
 # Usage:
-# docker run -it --rm -v $"(pwd):/work" nu-debian /work/docker-tests.nu
+# docker run -it --rm -v $"(pwd):/work" nu-alpine /work/docker-tests.nu
 
 def main [] {
     let test_plan = (
@@ -14,7 +14,7 @@ def main [] {
             | str join ", "
     )
     let plan = $"run_tests [ ($test_plan) ]"
-    nu --commands $"source ($env.CURRENT_FILE); ($plan)"
+    ^$nu.current-exe --commands $"source ($env.CURRENT_FILE); ($plan)"
 }
 
 def create_execution_plan [test: string] -> string {
@@ -23,13 +23,21 @@ def create_execution_plan [test: string] -> string {
 
 def run_tests [tests: list<record<name: string, execute: closure>>] {
     let results = $tests | par-each { run_test $in }
-    print $results
+    print_results $results
     print_summary $results
 }
 
+def print_results [results: list<record<name: string, result: string>>] {
+    let display_table = $results | update result { |row|
+        let color = if $row.result == "PASS" { "green" } else { "red" }
+        $"(ansi $color)($row.result)(ansi reset)"
+    }
+    print $display_table
+}
+
 def print_summary [results: list<record<name: string, result: string>>] {
-    let success = $results | where ($it.result == "✅") | length
-    let failure = $results | where ($it.result == "❌") | length
+    let success = $results | where ($it.result == "PASS") | length
+    let failure = $results | where ($it.result == "FAIL") | length
     let count = $results | length
 
     if ($failure == 0) {
@@ -42,11 +50,10 @@ def print_summary [results: list<record<name: string, result: string>>] {
 
 def run_test [test: record<name: string, execute: closure>] -> record<name: string, result: string, error: string> {
     try {
-        print $"Running: ($test.name)"
         do ($test.execute)
-        { result: "✅",name: $test.name, error: "" }
+        { result: $"PASS",name: $test.name, error: "" }
     } catch { |error|
-        { result: "❌", name: $test.name, error: $"($error.msg) (format_error $error.debug)" }
+        { result: $"FAIL", name: $test.name, error: $"($error.msg) (format_error $error.debug)" }
     }
 }
 
@@ -73,3 +80,65 @@ def "test user is nushell" [] {
     assert equal (whoami) "nushell"
 }
 
+def "test user is not root" [] {
+    let user_info = id
+        | parse "uid={uid}({user}) gid={gid}({group}){rest}"
+        | select uid user gid group
+
+    assert equal $user_info [
+        [uid user gid group];
+        ["1000" nushell "1000" nushell]
+    ]
+}
+
+def "test nu is added as a shell" [] {
+    let shell = cat /etc/shells
+        | lines
+        | where ($it | str contains "nu")
+        | first
+
+    assert str contains $shell "/nu"
+}
+
+def "test temp directory is cleared" [] {
+    let temp = ls /tmp
+
+    assert equal $temp []
+}
+
+def "test cache is cleared on Debian-like containers" [] {
+    let distro = cat /etc/os-release
+        | lines
+        | parse "{key}={value}"
+        | where $it.key == "ID"
+        | get value
+        | first
+
+    if ($distro == "debian" or $distro == "ubuntu") {
+        let package_cache = ls /var/lib/apt/lists
+        assert equal $package_cache []
+    }
+}
+
+def "test main plugins are installed" [] {
+    let plugins = (plugin list) | get name
+
+    assert ("formats" in $plugins)
+    assert ("gstat" in $plugins)
+    assert ("inc" in $plugins)
+    assert ("polars" in $plugins)
+    assert ("query" in $plugins)
+}
+
+def "test config initialised" [] {
+    let files = ls ~/.config/nushell
+        | select name size
+        | where name ends-with '.nu'
+        | insert file { |row| $row.name | parse --regex ".+/(.+\\.nu)" | first | get capture0 }
+
+    let env_size = $files | where file == "env.nu" | get size | first
+    let config_size = $files | where file == "config.nu" | get size | first
+
+    assert greater $env_size 1KiB
+    assert greater $config_size 10KiB
+}
