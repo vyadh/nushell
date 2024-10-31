@@ -23,8 +23,13 @@ def create_execution_plan [test: string] -> string {
 
 def run_tests [tests: list<record<name: string, execute: closure>>] {
     let results = $tests | par-each { run_test $in }
+
     print_results $results
     print_summary $results
+
+    if ($results | any { |test| $test.result == "FAIL" }) {
+        exit 1
+    }
 }
 
 def print_results [results: list<record<name: string, result: string>>] {
@@ -35,14 +40,13 @@ def print_results [results: list<record<name: string, result: string>>] {
     print $display_table
 }
 
-def print_summary [results: list<record<name: string, result: string>>] {
+def print_summary [results: list<record<name: string, result: string>>] -> bool {
     let success = $results | where ($it.result == "PASS") | length
     let failure = $results | where ($it.result == "FAIL") | length
     let count = $results | length
 
     if ($failure == 0) {
         print $"Testing completed: ($success) of ($count) were successful"
-        exit 1
     } else {
         print $"Testing completed: ($failure) of ($count) failed"
     }
