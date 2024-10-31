@@ -35,7 +35,7 @@ def run_tests [tests: list<record<name: string, execute: closure>>] {
 
 def print_header [] {
      if ("GITHUB_ACTIONS" in $env) {
-         print "### Container Test Results"
+         print "## Container Test Results"
      } else {
          print "Running tests..."
      }
@@ -43,10 +43,8 @@ def print_header [] {
 
 def print_results [results: list<record<name: string, result: string>>] {
     let display_table = $results | update result { |row|
-        let pass = $row.result == "PASS"
-        let emoji = if $pass { "✅" } else { "❌" }
-        let color = if $pass { "green" } else { "red" }
-        $"(ansi $color)($emoji) ($row.result)(ansi reset)"
+        let emoji = if ($row.result == "PASS") { "✅" } else { "❌" }
+        $"($emoji) ($row.result)"
     }
 
     if ("GITHUB_ACTIONS" in $env) {
@@ -62,9 +60,9 @@ def print_summary [results: list<record<name: string, result: string>>] -> bool 
     let count = $results | length
 
     if ($failure == 0) {
-        print $"Testing completed: ($success) of ($count) were successful"
+        print $"\nTesting completed: ($success) of ($count) were successful"
     } else {
-        print $"Testing completed: ($failure) of ($count) failed"
+        print $"\nTesting completed: ($failure) of ($count) failed"
     }
 }
 
