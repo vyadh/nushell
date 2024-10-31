@@ -34,8 +34,10 @@ def run_tests [tests: list<record<name: string, execute: closure>>] {
 
 def print_results [results: list<record<name: string, result: string>>] {
     let display_table = $results | update result { |row|
-        let color = if $row.result == "PASS" { "green" } else { "red" }
-        $"(ansi $color)($row.result)(ansi reset)"
+        let pass = $row.result == "PASS"
+        let emoji = if $pass { "✅" } else { "❌" }
+        let color = if $pass { "green" } else { "red" }
+        $"(ansi $color)($emoji) ($row.result)(ansi reset)"
     }
     print $display_table
 }
