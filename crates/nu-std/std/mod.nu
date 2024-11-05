@@ -13,6 +13,7 @@ export module std/input
 export module std/iter
 export module std/log
 export module std/math
+export module std/testing
 export module std/xml
 
 # Load main dirs command and all subcommands
