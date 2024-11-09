@@ -186,7 +186,6 @@ export def ($test_function_name) [] {
 # * result - test execution result
 def run-tests-for-module [
     module: record<file: path name: string before-each: string after-each: string before-all: string after-all: string test: list test-skip: list>
-    threads: int
 ] -> table<file: path, name: string, test: string, result: string> {
     let global_context = if not ($module.before-all|is-empty) {
             log info $"Running before-all for module ($module.name)"
@@ -240,7 +239,7 @@ def run-tests-for-module [
                 ''
             }
         }
-        | par-each  --threads $threads {|test|
+        | each {|test|
             log info $"Running ($test.test) in module ($module.name)"
             log debug $"Global context is ($global_context)"
 
@@ -291,18 +290,10 @@ export def run-tests [
     --list,                               # list the selected tests without running them.
     --threads: int@"nu-complete threads", # Amount of threads to use for parallel execution. Default: All threads are utilized
 ] {
-    let available_threads = (sys cpu | length)
+#    let available_threads = (sys cpu | length)
 
     # Can't use pattern matching here due to https://github.com/nushell/nushell/issues/9198
-    let threads = (if $threads == null {
-        $available_threads
-    } else if $threads < 1 {
-        1
-    } else if $threads <= $available_threads {
-        $threads
-    } else {
-        $available_threads
-    })
+#    let threads = 1
 
     let module_search_pattern = ('**' | path join ({
         stem: ($module | default "*")
@@ -334,7 +325,7 @@ export def run-tests [
 
     let modules = (
         ls ($path | path join $module_search_pattern | into glob)
-        | par-each --threads $threads {|row|
+        | each {|row|
             {
                 file: $row.name
                 name: ($row.name | path parse | get stem)
@@ -367,8 +358,8 @@ export def run-tests [
 
     let results = (
         $modules
-        | par-each  --threads $threads {|module|
-            run-tests-for-module $module $threads
+        | each  {|module|
+            run-tests-for-module $module
         }
         | flatten
     )
@@ -376,7 +367,7 @@ export def run-tests [
         let text = ([
             $"(ansi purple)some tests did not pass (char lparen)see complete errors below(char rparen):(ansi reset)"
             ""
-            ($results | par-each   --threads $threads {|test| ($test | show-pretty-test 4)} | str join "\n")
+            ($results | each {|test| ($test | show-pretty-test 4)} | str join "\n")
             ""
         ] | str join "\n")
 
