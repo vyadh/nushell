@@ -23,8 +23,13 @@ export def list-files [
     pattern: string = $default_pattern
 ] -> list<string> {
 
-    cd $path
-    glob $pattern
+    #todo test
+    if ($path | path type) == file {
+        [$path]
+    } else {
+        cd $path
+        glob $pattern
+    }
 }
 
 export def list-test-suites [path: string] -> table<name: string, path: string, tests<table<name: string, type: string>> {
