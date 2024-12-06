@@ -47,6 +47,7 @@ pub fn load_standard_library(
             "std/formats",
             include_str!("../std/formats/mod.nu"),
         ),
+
         ("mod.nu", "std/help", include_str!("../std/help/mod.nu")),
         ("mod.nu", "std/input", include_str!("../std/input/mod.nu")),
         ("mod.nu", "std/iter", include_str!("../std/iter/mod.nu")),
@@ -55,6 +56,14 @@ pub fn load_standard_library(
         ("mod.nu", "std/util", include_str!("../std/util/mod.nu")),
         ("mod.nu", "std/xml", include_str!("../std/xml/mod.nu")),
         ("mod.nu", "std/config", include_str!("../std/config/mod.nu")),
+
+        ("color_scheme.nu", "std/testing", include_str!("../std/testing/color_scheme.nu")),
+        ("discover.nu", "std/testing", include_str!("../std/testing/discover.nu")),
+        ("orchestrator.nu", "std/testing", include_str!("../std/testing/orchestrator.nu")),
+        ("reporter_table.nu", "std/testing", include_str!("../std/testing/reporter_table.nu")),
+        ("runner.nu", "std/testing", include_str!("../std/testing/runner.nu")),
+        ("store.nu", "std/testing", include_str!("../std/testing/store.nu")),
+        ("mod.nu", "std/testing", include_str!("../std/testing/mod.nu")),
     ];
 
     for (filename, std_subdir_name, content) in std_submodules.drain(..) {
